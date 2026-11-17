@@ -1,0 +1,16 @@
+[Unit]
+Description=Health-check HTTP server (behind nginx)
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /usr/local/lib/vps-nginx/healthcheck/server.py
+Environment=HEALTHCHECK_HOST=127.0.0.1 HEALTHCHECK_PORT=8081
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
