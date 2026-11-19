@@ -13,7 +13,6 @@ systemctl daemon-reload
 systemctl enable --now healthcheck.service
 systemctl restart healthcheck.service
 
-rm -f /etc/nginx/sites-enabled/default
 install -D -m 644 nginx/tailnet.conf /etc/nginx/sites-available/tailnet.conf
 ln -sf /etc/nginx/sites-available/tailnet.conf /etc/nginx/sites-enabled/tailnet.conf
 nginx -t

@@ -29,7 +29,7 @@ Nothing listens on the public interface.
 git pull && sudo ./scripts/install.sh
 ```
 
-The script is idempotent. It removes nginx's default site and applies the `tailscale serve` mapping, which persists across reboots.
+The script is idempotent. It applies the `tailscale serve` mapping, which persists across reboots.
 
 ## Health check
 
