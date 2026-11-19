@@ -1,6 +1,6 @@
 # vps-nginx
 
-Tailnet-only HTTPS entrypoint for `<host>.<tailnet>.ts.net`.
+Tailnet-only HTTPS entrypoint for this VPS's MagicDNS name (`<host>.<tailnet>.ts.net`).
 
 ```
 tailnet ──HTTPS──▶ tailscaled :443 ──HTTP──▶ nginx 127.0.0.1:8080 ──▶ services on 127.0.0.1:<port>

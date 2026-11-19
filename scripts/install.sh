@@ -24,4 +24,5 @@ for https_port in "${!SERVE_PORTS[@]}"; do
 done
 tailscale serve status
 
-echo "Deployed. Test from a tailnet node: curl https://<host>.<tailnet>.ts.net/health"
+TS_HOST=$(tailscale status --json | python3 -c 'import json,sys; print(json.load(sys.stdin)["Self"]["DNSName"].rstrip("."))')
+echo "Deployed. Test from a tailnet node: curl https://$TS_HOST/health"
