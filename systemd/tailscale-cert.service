@@ -1,8 +1,0 @@
-[Unit]
-Description=Fetch/renew Tailscale TLS cert for nginx
-After=tailscaled.service
-Wants=tailscaled.service
-
-[Service]
-Type=oneshot
-ExecStart=/usr/local/lib/vps-nginx/scripts/renew-cert.sh

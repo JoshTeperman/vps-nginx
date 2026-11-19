@@ -1,19 +1,27 @@
 # vps-nginx
 
-Tailnet-only HTTPS reverse proxy for `<host>.<tailnet>.ts.net`.
+Tailnet-only HTTPS entrypoint for `<host>.<tailnet>.ts.net`.
 
-nginx listens **only** on this node's Tailscale addresses (`100.113.18.9`, `fd7a:115c:a1e0::f52c:120a`) on port 443 and proxies to services bound to `127.0.0.1`.
+```
+tailnet ──HTTPS──▶ tailscaled :443 ──HTTP──▶ nginx 127.0.0.1:8080 ──▶ services on 127.0.0.1:<port>
+                  (tailscale serve,          (routing by path)
+                   TLS + certs)
+```
+
+- **`tailscale serve`** listens on the tailnet only. It terminates TLS with the `*.ts.net` cert and renews it automatically.
+- **nginx** listens on loopback only and routes by path to services.
+- **Services** each run their own HTTP server bound to `127.0.0.1`.
+
+Nothing listens on the public interface.
 
 ## Layout
 
 | Path | Installed to | Purpose |
 |---|---|---|
-| `nginx/tailnet.conf` | `/etc/nginx/sites-enabled/` | HTTPS server block and routes |
+| `nginx/tailnet.conf` | `/etc/nginx/sites-enabled/` | Routing: one `server` block per tailnet HTTPS port |
 | `healthcheck/server.py` | `/usr/local/lib/vps-nginx/` | Stdlib-only health server on `127.0.0.1:8081` |
 | `systemd/healthcheck.service` | `/etc/systemd/system/` | Runs the health server |
-| `systemd/tailscale-cert.{service,timer}` | `/etc/systemd/system/` | Daily `tailscale cert` renewal and nginx reload |
-| `scripts/renew-cert.sh` | `/usr/local/lib/vps-nginx/` | Fetches cert; self-signed fallback if Tailscale HTTPS is disabled |
-| `sysctl/99-vps-nginx.conf` | `/etc/sysctl.d/` | `ip_nonlocal_bind` so nginx starts before `tailscale0` is up |
+| `scripts/install.sh` | (run in place) | Deploys everything and sets the `tailscale serve` port mapping |
 
 ## Deploy
 
@@ -21,7 +29,7 @@ nginx listens **only** on this node's Tailscale addresses (`100.113.18.9`, `fd7a
 git pull && sudo ./scripts/install.sh
 ```
 
-The script is idempotent. It also removes nginx's default site.
+The script is idempotent. It removes nginx's default site and applies the `tailscale serve` mapping, which persists across reboots.
 
 ## Health check
 
@@ -32,8 +40,16 @@ curl https://<host>.<tailnet>.ts.net/health
 # {"status": "ok", "host": "...", "uptime_s": ..., "client": "100.x.y.z"}
 ```
 
-Until HTTPS Certificates are enabled in the Tailscale admin console (DNS page), the cert is self-signed, so use `curl -k`. After enabling them, run `sudo systemctl start tailscale-cert.service` to swap in the real cert.
-
 ## Adding a service
 
-Bind the service to `127.0.0.1:<port>`. Then add a `location` block to `nginx/tailnet.conf` and redeploy.
+1. Bind the service to `127.0.0.1:<port>`.
+2. Choose how to expose it:
+   - **Under a path on :443:** add a `location` block to the `:8080` server in `nginx/tailnet.conf`. A trailing slash on `proxy_pass` strips the prefix. The app must support running under a base path if it emits absolute URLs.
+   - **On its own tailnet port** (e.g. `:8443`, so Tailscale ACLs can restrict which devices reach it): add a new `server { listen 127.0.0.1:8443; ... }` block, and add `[8443]=8443` to `SERVE_PORTS` in `scripts/install.sh`.
+3. Redeploy.
+
+## Client identity
+
+- tailscaled sets `X-Forwarded-For` to the caller's tailnet IP. A client-supplied value is not trusted; this was tested.
+- nginx turns that into `$remote_addr`, so per-location `allow 100.x.y.z; deny all;` works.
+- `Tailscale-User-Login` and `Tailscale-User-Name` are passed through to services. They identify the *user*, not the device, and are absent for tagged devices.
