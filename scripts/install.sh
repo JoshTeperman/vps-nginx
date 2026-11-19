@@ -7,16 +7,6 @@ declare -A SERVE_PORTS=(
   [443]=8080
 )
 
-if [[ -f /etc/systemd/system/tailscale-cert.timer ]]; then
-  systemctl disable --now tailscale-cert.timer 2>/dev/null || true
-  rm -f /etc/systemd/system/tailscale-cert.{service,timer}
-fi
-rm -rf "$LIB/scripts" /etc/nginx/tls
-if [[ -f /etc/sysctl.d/99-vps-nginx.conf ]]; then
-  rm -f /etc/sysctl.d/99-vps-nginx.conf
-  sysctl -q -w net.ipv4.ip_nonlocal_bind=0 net.ipv6.ip_nonlocal_bind=0
-fi
-
 install -D -m 644 healthcheck/server.py "$LIB/healthcheck/server.py"
 install -m 644 systemd/healthcheck.service /etc/systemd/system/
 systemctl daemon-reload
