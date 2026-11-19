@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-"""Minimal health-check HTTP server, bound to localhost and fronted by nginx."""
 import json
 import os
 import socket
@@ -9,7 +8,6 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 HOST = os.environ.get("HEALTHCHECK_HOST", "127.0.0.1")
 PORT = int(os.environ.get("HEALTHCHECK_PORT", "8081"))
 STARTED = time.time()
-
 
 class Handler(BaseHTTPRequestHandler):
     server_version = "healthcheck/1.0"
@@ -35,7 +33,6 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         if self.command != "HEAD":
             self.wfile.write(data)
-
 
 if __name__ == "__main__":
     ThreadingHTTPServer((HOST, PORT), Handler).serve_forever()
